@@ -28,24 +28,27 @@ export default function App() {
     }
 
     let pickerResult = await ImagePicker.launchImageLibraryAsync();
-    console.log(pickerResult);
-
-    if (pickerResult.cancelled) {
+     if (pickerResult.cancelled) {
       return;
     }
 
-    setSelectedImage({localUri: pickerResult.uri})
+    if (Platform.OS === "web") {
+      let remoteUri = await uploadToAnonymousFilesAsync(pickerResult.uri);
+      setSelectedImage({ localUri: pickerResult.uri, remoteUri });
+    } else {
+      setSelectedImage({ localUri: pickerResult.uri, remoteUri: null });
+    }
   };
   
   let openShareDialogAsync = async () => {
-    if (Platform.OS === "web") {
-      let remoteUri =  await uploadToAnonymousFilesAsync(pickerResult.uri);
-      uploadToAnonymousFilesAsync({ localUri: pickerResult.uri, remoteUri })
-    } else {
-      uploadToAnonymousFilesAsync({ localUri: pickerResult.uri, remoteUri: null });
+    if (!(await Sharing.isAvailableAsync())) {
+      alert(
+        `The image is available for sharing at: ${selectedImage.remoteUri}`
+      );
+      return;
     }
 
-    await Sharing.shareAsync(selectedImage.localUri);
+    Sharing.shareAsync(selectedImage.remoteUri || selectedImage.localUri);
   }; 
 
   if (selectedImage) {
